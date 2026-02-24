@@ -250,7 +250,7 @@ const Developer = () => {
                       </div>
 
                       {/* Social Icons (Top Right) */}
-                      <div className="absolute right-5 top-4 flex items-center gap-3 z-10">
+                      <div className="absolute right-5 top-4 flex items-center gap-3 z-30">
                         <a href={member.github} className="text-gray-400 hover:text-[#00f5ff] transition-colors" target="_blank" rel="noreferrer">
                           <Github size={18} />
                         </a>
