@@ -1,9 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Binary, Plus, Search, Trash2, RotateCcw, 
-  GitBranch, Zap, Layers, ArrowRight
+import {
+    Binary, Plus, Search, Trash2, RotateCcw,
+    GitBranch, Zap, Layers, ArrowRight, Terminal
 } from 'lucide-react';
+import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
+
+// Helper component that forces the zoom wrapper to center the canvas on load.
+// Uses an empty dependency array to prevent infinite loops.
+const AutoCenter = () => {
+    const { centerView } = useControls();
+    useEffect(() => {
+        centerView();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return null;
+};
 
 // --- TYPES ---
 class TreeNode {
@@ -29,7 +41,7 @@ const BSTVisualizer = () => {
     const [root, setRoot] = useState<TreeNode | null>(null);
     const [inputValue, setInputValue] = useState<number | ''>('');
     const [log, setLog] = useState('System Ready');
-    
+
     // Animation State
     const [highlightNode, setHighlightNode] = useState<string | null>(null);
     const [visitedNodes, setVisitedNodes] = useState<Set<string>>(new Set());
@@ -51,11 +63,11 @@ const BSTVisualizer = () => {
     // Re-calculate X/Y coordinates for the entire tree
     const updatePositions = (node: TreeNode | null, x: number, y: number, offset: number) => {
         if (!node) return;
-        node.x = x;
-        node.y = y;
+        node.x = Math.round(x);
+        node.y = Math.round(y);
         // Reduce offset as we go deeper to prevent overlap
-        updatePositions(node.left, x - offset, y + 80, offset * 0.55);
-        updatePositions(node.right, x + offset, y + 80, offset * 0.55);
+        updatePositions(node.left, x - offset, y + 80, offset * 0.6);
+        updatePositions(node.right, x + offset, y + 80, offset * 0.6);
     };
 
     // --- ALGORITHMS ---
@@ -63,7 +75,7 @@ const BSTVisualizer = () => {
     const insert = async () => {
         if (inputValue === '' || isAnimating) return;
         const val = Number(inputValue);
-        
+
         // Check for duplicate at root level for quick feedback
         if (root && root.value === val) {
             setLog(`Error: Duplicate value ${val}`);
@@ -77,8 +89,8 @@ const BSTVisualizer = () => {
 
         if (!root) {
             const newNode = new TreeNode(val);
-            newNode.x = 50;
-            newNode.y = 50;
+            newNode.x = 800;
+            newNode.y = 700;
             setRoot(newNode);
             setLog(`Root Node ${val} Created`);
             setIsAnimating(false);
@@ -121,9 +133,9 @@ const BSTVisualizer = () => {
         }
 
         // Recalculate layout
-        updatePositions(root, 50, 50, 25);
+        updatePositions(root, 800, 700, 300);
         setRoot({ ...root }); // Trigger re-render
-        
+
         setHighlightNode(null);
         setVisitedNodes(new Set());
         setIsAnimating(false);
@@ -160,7 +172,7 @@ const BSTVisualizer = () => {
         }
 
         if (!found) setLog(`Target ${val} not found in tree.`);
-        
+
         await sleep(1000);
         setHighlightNode(null);
         // Keep visited nodes highlighted for a moment
@@ -184,7 +196,7 @@ const BSTVisualizer = () => {
         } else {
             // Case 1: No child
             if (!node.left && !node.right) return null;
-            
+
             // Case 2: One child
             if (!node.left) return node.right;
             if (!node.right) return node.left;
@@ -192,7 +204,7 @@ const BSTVisualizer = () => {
             // Case 3: Two children (Find Min in Right Subtree)
             let temp = node.right;
             while (temp.left) temp = temp.left;
-            
+
             node.value = temp.value;
             node.right = deleteNode(node.right, temp.value);
             return node;
@@ -203,9 +215,9 @@ const BSTVisualizer = () => {
         if (inputValue === '' || !root || isAnimating) return;
         const val = Number(inputValue);
         setLog(`Removing Node: ${val}`);
-        
+
         const newRoot = deleteNode(root, val);
-        updatePositions(newRoot, 50, 50, 25);
+        updatePositions(newRoot, 800, 700, 300);
         setRoot(newRoot ? { ...newRoot } : null);
         setLog(`Node ${val} removed (if existed).`);
         generateRandom();
@@ -228,19 +240,19 @@ const BSTVisualizer = () => {
         const sequence: string[] = [];
 
         const inOrder = (n: TreeNode | null) => {
-            if(!n) return;
+            if (!n) return;
             inOrder(n.left);
             sequence.push(n.id);
             inOrder(n.right);
         };
         const preOrder = (n: TreeNode | null) => {
-            if(!n) return;
+            if (!n) return;
             sequence.push(n.id);
             preOrder(n.left);
             preOrder(n.right);
         };
         const postOrder = (n: TreeNode | null) => {
-            if(!n) return;
+            if (!n) return;
             postOrder(n.left);
             postOrder(n.right);
             sequence.push(n.id);
@@ -274,11 +286,11 @@ const BSTVisualizer = () => {
         const edges = [];
         if (node.left) {
             edges.push(
-                <motion.line 
+                <motion.line
                     key={`${node.id}-left`}
                     initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-                    x1={`${node.x}%`} y1={node.y} 
-                    x2={`${node.left.x}%`} y2={node.left.y} 
+                    x1={node.x} y1={node.y}
+                    x2={node.left.x} y2={node.left.y}
                     stroke="#333" strokeWidth="2"
                 />
             );
@@ -286,11 +298,11 @@ const BSTVisualizer = () => {
         }
         if (node.right) {
             edges.push(
-                <motion.line 
+                <motion.line
                     key={`${node.id}-right`}
                     initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-                    x1={`${node.x}%`} y1={node.y} 
-                    x2={`${node.right.x}%`} y2={node.right.y} 
+                    x1={node.x} y1={node.y}
+                    x2={node.right.x} y2={node.right.y}
                     stroke="#333" strokeWidth="2"
                 />
             );
@@ -302,7 +314,7 @@ const BSTVisualizer = () => {
     // Recursive Nodes
     const renderNodes = (node: TreeNode | null): JSX.Element[] => {
         if (!node) return [];
-        
+
         const isVisited = visitedNodes.has(node.id);
         const isActive = highlightNode === node.id;
         const isFound = foundNode === node.id;
@@ -311,16 +323,15 @@ const BSTVisualizer = () => {
             <motion.div
                 key={node.id}
                 initial={{ scale: 0 }}
-                animate={{ 
+                animate={{
                     scale: isActive ? 1.2 : 1,
                     backgroundColor: isFound ? '#00ff88' : isActive ? '#00f5ff' : isVisited ? '#00f5ff' : '#0a0a1a',
                     borderColor: isFound ? '#00ff88' : isActive ? '#00f5ff' : isVisited ? '#00f5ff' : '#444'
                 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className={`absolute w-10 h-10 -ml-5 -mt-5 rounded-full flex items-center justify-center border-2 text-xs font-bold font-mono z-20 shadow-lg`}
-                style={{ 
-                    left: `${node.x}%`, 
-                    top: node.y,
+                style={{
+                    left: node.x, top: node.y,
                     boxShadow: isActive ? '0 0 30px rgba(0,245,255,0.6)' : isFound ? '0 0 30px rgba(0,255,136,0.8)' : 'none',
                     color: (isActive || isVisited || isFound) ? '#000' : '#888'
                 }}
@@ -335,12 +346,12 @@ const BSTVisualizer = () => {
 
     return (
         <div className="w-full h-full flex flex-col lg:flex-row bg-[#050510] overflow-hidden text-white font-sans">
-            
+
             {/* --- SIDEBAR --- */}
-            <div className="w-full lg:w-80 h-auto flex-shrink-0 bg-[#0a0a1a] border-r border-[#00f5ff]/20 flex flex-col z-20 shadow-[10px_0_30px_rgba(0,0,0,0.5)]">
-                
+            <div className="w-full lg:w-80 h-[45%] lg:h-auto flex-shrink-0 bg-[#0a0a1a] border-b lg:border-b-0 lg:border-r border-[#00f5ff]/20 flex flex-col z-20 shadow-[10px_0_30px_rgba(0,0,0,0.5)]">
+
                 {/* Header */}
-                <div className="p-6 border-b border-white/5 bg-black/20">
+                <div className="hidden lg:block p-6 border-b border-white/5 bg-black/20">
                     <div className="flex items-center gap-3 mb-1">
                         <div className="p-2 bg-[#00f5ff]/10 rounded-lg border border-[#00f5ff]/30 text-[#00f5ff]">
                             <Binary size={20} />
@@ -353,61 +364,61 @@ const BSTVisualizer = () => {
                 </div>
 
                 {/* Controls */}
-                <div className="p-6 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
-                    
+                <div className="p-2 lg:p-6 flex-1 overflow-y-auto space-y-3 lg:space-y-6 custom-scrollbar">
+
                     {/* Input Area */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-mono text-[#00f5ff] uppercase tracking-widest flex items-center gap-2">
-                            <Zap size={12}/> Node Value
+                    <div className="space-y-1 lg:space-y-2">
+                        <label className="text-[9px] lg:text-[10px] font-mono text-[#00f5ff] uppercase tracking-widest flex items-center gap-2">
+                            <Zap size={12} /> Node Value
                         </label>
                         <div className="flex gap-2">
-                            <input 
-                                type="number" 
-                                value={inputValue} 
+                            <input
+                                type="number"
+                                value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value === '' ? '' : Number(e.target.value))}
                                 onKeyDown={(e) => e.key === 'Enter' && insert()}
-                                className="w-full bg-[#050510] border border-white/10 rounded-lg p-3 text-sm font-mono text-[#00f5ff] focus:border-[#00f5ff] outline-none shadow-inner"
+                                className="w-full bg-[#050510] border border-white/10 rounded-lg p-2 lg:p-3 text-xs lg:text-sm font-mono text-[#00f5ff] focus:border-[#00f5ff] outline-none shadow-inner"
                                 placeholder="Value..."
                             />
-                            <button 
+                            <button
                                 onClick={generateRandom}
-                                className="p-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 text-gray-400"
+                                className="p-2 lg:p-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 text-gray-400"
                                 title="Randomize"
                             >
-                                <RotateCcw size={16} />
+                                <RotateCcw size={16} className="w-4 h-4 lg:w-5 lg:h-5" />
                             </button>
                         </div>
                     </div>
 
                     {/* Primary Actions */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <button 
-                            onClick={insert} 
+                    <div className="grid grid-cols-2 gap-2 lg:gap-3">
+                        <button
+                            onClick={insert}
                             disabled={isAnimating}
-                            className="col-span-2 py-3 bg-[#00f5ff]/10 border border-[#00f5ff]/50 hover:bg-[#00f5ff]/20 text-[#00f5ff] rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-[0_0_15px_rgba(0,245,255,0.1)]"
+                            className="col-span-2 py-2 lg:py-3 bg-[#00f5ff]/10 border border-[#00f5ff]/50 hover:bg-[#00f5ff]/20 text-[#00f5ff] rounded-lg font-bold text-[10px] lg:text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-[0_0_15px_rgba(0,245,255,0.1)]"
                         >
-                            <Plus size={16} /> INSERT NODE
+                            <Plus size={14} className="lg:w-4 lg:h-4" /> INSERT NODE
                         </button>
-                        <button 
-                            onClick={search} 
+                        <button
+                            onClick={search}
                             disabled={isAnimating}
-                            className="py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            className="py-2 lg:py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 rounded-lg font-bold text-[10px] lg:text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                         >
-                            <Search size={14} /> SEARCH
+                            <Search size={14} className="lg:w-4 lg:h-4" /> SEARCH
                         </button>
-                        <button 
-                            onClick={remove} 
+                        <button
+                            onClick={remove}
                             disabled={isAnimating}
-                            className="py-3 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            className="py-2 lg:py-3 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 rounded-lg font-bold text-[10px] lg:text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                         >
-                            <Trash2 size={14} /> DELETE
+                            <Trash2 size={14} className="lg:w-4 lg:h-4" /> DELETE
                         </button>
                     </div>
 
                     {/* Traversals */}
-                    <div className="pt-4 border-t border-white/5 space-y-3">
-                         <label className="text-[10px] font-mono text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                            <GitBranch size={12}/> Traversal Sequence
+                    <div className="pt-3 lg:pt-4 border-t border-white/5 space-y-2 lg:space-y-3">
+                        <label className="text-[9px] lg:text-[10px] font-mono text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                            <GitBranch size={12} /> Traversal Sequence
                         </label>
                         <div className="grid grid-cols-3 gap-2">
                             {['in', 'pre', 'post'].map((t) => (
@@ -415,7 +426,7 @@ const BSTVisualizer = () => {
                                     key={t}
                                     onClick={() => traverse(t as any)}
                                     disabled={isAnimating}
-                                    className="py-2 rounded bg-black/40 border border-white/10 text-[10px] font-mono uppercase hover:border-[#00f5ff] hover:text-[#00f5ff] transition-colors disabled:opacity-30"
+                                    className="py-1.5 lg:py-2 rounded bg-black/40 border border-white/10 text-[9px] lg:text-[10px] font-mono uppercase hover:border-[#00f5ff] hover:text-[#00f5ff] transition-colors disabled:opacity-30"
                                 >
                                     {t}-Order
                                 </button>
@@ -424,13 +435,13 @@ const BSTVisualizer = () => {
                     </div>
 
                     {/* Reset */}
-                    <button onClick={reset} className="w-full py-3 bg-red-900/5 border border-red-900/20 text-red-700 hover:bg-red-900/10 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all mt-4">
-                        <Layers size={14} /> FLUSH MEMORY
+                    <button onClick={reset} className="w-full py-2 lg:py-3 bg-red-900/5 border border-red-900/20 text-red-700 hover:bg-red-900/10 rounded-lg font-bold text-[10px] lg:text-xs flex items-center justify-center gap-2 transition-all mt-2 lg:mt-4">
+                        <Layers size={14} className="lg:w-4 lg:h-4" /> FLUSH MEMORY
                     </button>
                 </div>
 
                 {/* Console Log */}
-                <div className="p-4 bg-black/60 border-t border-white/10 font-mono text-[10px]">
+                <div className="hidden lg:block p-4 bg-black/60 border-t border-white/10 font-mono text-[10px]">
                     <div className="flex items-center gap-2 text-gray-500 mb-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-[#00ff88] animate-pulse" />
                         SYSTEM_LOG
@@ -440,35 +451,66 @@ const BSTVisualizer = () => {
             </div>
 
             {/* --- CANVAS WORKSPACE --- */}
-            <div className="flex-1 relative bg-[#050510] overflow-hidden">
+            <div className="flex-1 relative bg-[#050510] overflow-hidden min-h-[60vh] lg:min-h-0">
+
+                {/* Mobile Execution Trace (Bottom Fixed) */}
+                <div className="lg:hidden absolute bottom-8 left-1/2 -translate-x-1/2 z-50 w-[94%] pb-safe">
+                    <motion.div
+                        key={log}
+                        initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                        className="px-4 py-3 bg-[#0a0a1a]/95 backdrop-blur-md border border-[#00f5ff]/30 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] flex items-center gap-3 w-full"
+                    >
+                        <div className={`p-2 rounded-xl shrink-0 ${isAnimating ? 'bg-[#00f5ff]/10 text-[#00f5ff] animate-pulse shadow-[0_0_15px_#00f5ff]' : 'bg-gray-800 text-gray-500'}`}>
+                            <Terminal size={16} />
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                            <span className="text-[9px] text-[#00f5ff] font-bold uppercase tracking-widest truncate mb-0.5">Execution_Trace</span>
+                            <span className="text-xs font-mono font-medium text-white truncate">
+                                {log || "SYSTEM_READY"}
+                            </span>
+                        </div>
+                    </motion.div>
+                </div>
+
                 {/* Grid Background */}
-                <div className="absolute inset-0 pointer-events-none opacity-20" 
-                    style={{ 
-                        backgroundImage: 'linear-gradient(#1a1a2e 1px, transparent 1px), linear-gradient(90deg, #1a1a2e 1px, transparent 1px)', 
-                        backgroundSize: '40px 40px' 
-                    }} 
+                <div className="absolute inset-0 pointer-events-none opacity-20"
+                    style={{
+                        backgroundImage: 'linear-gradient(#1a1a2e 1px, transparent 1px), linear-gradient(90deg, #1a1a2e 1px, transparent 1px)',
+                        backgroundSize: '40px 40px'
+                    }}
                 />
 
-                <div className="relative w-full h-full overflow-auto custom-scrollbar">
-                    {/* SVG Connections Layer */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none z-0 min-h-[800px] min-w-[800px]">
-                        {renderEdges(root)}
-                    </svg>
+                <TransformWrapper
+                    initialScale={1}
+                    minScale={0.2}
+                    maxScale={3}
+                    centerOnInit={true}
+                    wheel={{ step: 0.1 }}
+                >
+                    <AutoCenter />
+                    <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
+                        <div className="relative min-h-[1600px] min-w-[1600px] flex items-center justify-center">
+                            {/* SVG Connections Layer */}
+                            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+                                {renderEdges(root)}
+                            </svg>
 
-                    {/* Node Layer */}
-                    <div className="absolute inset-0 w-full h-full pointer-events-none z-10 min-h-[800px] min-w-[800px]">
-                        <AnimatePresence>
-                            {renderNodes(root)}
-                        </AnimatePresence>
-                    </div>
+                            {/* Node Layer */}
+                            <div className="absolute inset-0 w-full h-full pointer-events-none z-10">
+                                <AnimatePresence>
+                                    {renderNodes(root)}
+                                </AnimatePresence>
+                            </div>
 
-                    {root === null && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600 font-mono opacity-50">
-                            <Binary size={48} className="mb-4 text-gray-700" />
-                            <p className="text-sm">[ MEMORY_EMPTY :: INITIALIZE_ROOT ]</p>
+                            {root === null && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600 font-mono opacity-50 pointer-events-none">
+                                    <Binary size={48} className="mb-4 text-gray-700" />
+                                    <p className="text-sm">[ MEMORY_EMPTY :: INITIALIZE_ROOT ]</p>
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </TransformComponent>
+                </TransformWrapper>
             </div>
         </div>
     );

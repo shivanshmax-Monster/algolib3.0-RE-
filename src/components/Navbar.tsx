@@ -1,12 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  Home, 
-  Terminal, 
-  Cpu, 
-  Users, 
+import {
+  Home,
+  Terminal,
+  Cpu,
+  Users,
   Zap,
-  BookOpen, 
+  BookOpen,
   Sparkles
 } from "lucide-react";
 import { useState } from "react";
@@ -27,17 +27,17 @@ const Navbar = () => {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed top-6 inset-x-0 z-50 mx-auto w-max max-w-[95%]"
+      className="relative lg:fixed lg:top-6 inset-x-0 z-50 mx-auto w-max max-w-[95%]"
     >
       {/* MAIN CAPSULE 
         - Mobile: tighter padding
         - Desktop: spacious padding
       */}
       <div className="relative flex items-center gap-4 sm:gap-2 p-1.5 rounded-full bg-[#03030c]/60 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] ring-1 ring-white/5">
-        
+
         {/* --- LOGO SECTION --- */}
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="flex items-center gap-2 px-3 sm:px-4 py-2 mr-1 sm:mr-2 rounded-full hover:bg-white/5 transition-colors group"
         >
           <div className="relative flex items-center justify-center w-8 h-8 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-lg shadow-lg shadow-cyan-500/20 group-hover/logo:scale-110 transition-transform duration-300">
@@ -45,7 +45,7 @@ const Navbar = () => {
             {/* Ping Animation */}
             <div className="absolute inset-0 bg-white rounded-lg animate-ping opacity-20" />
           </div>
-          
+
           {/* Text hidden on mobile to save space, visible on tablet/desktop */}
           <div className="flex flex-col leading-none hidden sm:flex">
             <span className="font-bold text-white tracking-tight text-sm">
@@ -64,8 +64,8 @@ const Navbar = () => {
             const isHovered = hoveredTab === tab.name;
 
             return (
-              <li 
-                key={tab.name} 
+              <li
+                key={tab.name}
                 onMouseEnter={() => setHoveredTab(tab.name)}
                 onMouseLeave={() => setHoveredTab(null)}
                 className="relative"
@@ -80,7 +80,7 @@ const Navbar = () => {
                 >
                   {/* Icon */}
                   <tab.icon className={`w-4 h-4 sm:w-[18px] sm:h-[18px] transition-transform duration-300 ${isActive || isHovered ? 'scale-110' : ''}`} />
-                  
+
                   {/* Label (Hidden on mobile, visible on sm+) */}
                   <span className="text-xs font-medium hidden sm:block">
                     {tab.name}

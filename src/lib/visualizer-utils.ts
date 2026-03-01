@@ -14,6 +14,14 @@ class TreeNode {
 }
 `;
 
+export function debounce<T extends (...args: any[]) => void>(func: T, wait: number) {
+  let timeout: any;
+  return function(this: any, ...args: Parameters<T>) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
 export function wrapForPythonTutor(code: string): string {
   let processed = code.trim();
 
@@ -35,9 +43,16 @@ export function wrapForPythonTutor(code: string): string {
     processed = `class Main {\n  public static void main(String[] args) {\n    ${processed}\n    System.out.println("Execution complete.");\n  }\n}`;
   }
 
-  // Inject helper classes if code references them
+  // Optimization: Quick check before expensive comment stripping
   if (/ListNode|TreeNode/.test(processed)) {
-    processed = HELPER_CLASSES + "\n" + processed;
+    // Strip comments to avoid false positives when checking for user-defined classes
+    const codeWithoutComments = processed.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+
+    // Inject helper classes if code references them
+    // Only inject if the user hasn't defined them manually
+    if (/ListNode|TreeNode/.test(codeWithoutComments) && !/class\s+(ListNode|TreeNode)/.test(codeWithoutComments)) {
+      processed = HELPER_CLASSES + "\n" + processed;
+    }
   }
 
   return processed;
