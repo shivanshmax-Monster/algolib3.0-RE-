@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import CustomCursor from "@/components/CustomCursor"; // Import the cursor
 import Docs from "./pages/Docs";
 import Admin from "./pages/Admin";
+import OrientationWarning from "@/components/OrientationWarning";
 
 const queryClient = new QueryClient();
 
@@ -20,7 +21,9 @@ const App = () => (
     <TooltipProvider>
       {/* The cursor sits above everything else */}
       <CustomCursor />
-      
+
+      <OrientationWarning />
+
       <Toaster />
       <Sonner />
       <BrowserRouter>
